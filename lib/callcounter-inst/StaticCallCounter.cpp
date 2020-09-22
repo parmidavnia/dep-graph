@@ -2,8 +2,12 @@
 
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/Analysis/CFG.h"
 
 #include "StaticCallCounter.h"
+
+#include <map>
+
 
 // This program can be used by opt. After compilation, use:
 // opt -load buildpath/lib/callcounter-inst.so --callcounter -analyze bitcode.bc
@@ -28,9 +32,24 @@ RegisterPass<StaticCallCounter> X("callcounter",
 bool
 StaticCallCounter::runOnModule(Module& m) {
   for (auto& f : m) {
-    for (auto& bb : f) {
+    for (auto &bb : f) {
+        for( auto it = llvm::pred_begin(&bb), et = llvm::pred_end(&bb); it != et; it++){
+            BasicBlock *test = *it;
+            outs() << "BasicBlock: \n";
+            test->print(outs());
+        }
       for (auto& i : bb) {
-        handleInstruction(CallSite(&i));
+          for(auto &op: i.operands()){
+              op->print(outs());
+          }
+          for(auto &use: i.uses()){
+              use->print(outs());
+          }
+          outs() << "\n Instruction: \n";
+          i.print(outs());
+          //inst_bb[&i] = &bb;
+          inst_bb.insert({&i, &bb});
+        //handleInstruction(CallSite(&i));
       }
     }
   }
